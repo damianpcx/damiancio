@@ -5,13 +5,43 @@ async function addItem() {
   const url = urlInput.value.trim();
   if (!url) return;
 
-  const proxy = 'https://api.allorigins.win/get?url=';
-  const response = await fetch(proxy + encodeURIComponent(url));
-  const data = await response.json();
+  const proxies = [
+    'https://api.allorigins.win/get?url=',
+    'https://cors-anywhere.herokuapp.com/',
+  ];
 
-  const html = data.contents;
+  let data = null;
+  let success = false;
+
+  for (const proxy of proxies) {
+    try {
+      const fetchUrl = proxy + encodeURIComponent(url);
+      const response = await fetch(fetchUrl, {
+        headers: proxy.includes('cors-anywhere') ? { Origin: location.origin } : {}
+      });
+      if (!response.ok) throw new Error('Network response not ok');
+
+      if (proxy.includes('allorigins')) {
+        const json = await response.json();
+        data = json.contents;
+      } else {
+        data = await response.text();
+      }
+
+      success = true;
+      break;
+    } catch (err) {
+      console.warn(`Fetch failed using proxy ${proxy}: ${err.message}`);
+    }
+  }
+
+  if (!success) {
+    alert('Sorry, failed to fetch product info. Please try again later.');
+    return;
+  }
+
   const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
+  const doc = parser.parseFromString(data, 'text/html');
 
   const title = doc.querySelector('meta[property="og:title"]')?.content ||
                 doc.title || 'No title';
@@ -53,12 +83,4 @@ function renderWishlist() {
     `;
     wishlistDiv.innerHTML += itemHTML;
   });
-  if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js')
-      .then(reg => console.log('Service Worker registered.', reg))
-      .catch(err => console.log('Service Worker registration failed.', err));
-  });
-}
-
 }
