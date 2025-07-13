@@ -6,7 +6,7 @@ async function addItem() {
   if (!url) return;
 
   try {
-    const response = await fetch(`https://your-scraper-url.onrender.com/scrape?url=${encodeURIComponent(url)}`);
+    const response = await fetch(`https://wishlist-scrapper.onrender.com`);
     const data = await response.json();
 
     const item = { title: data.title, image: data.image, price: data.price, url: data.url };
